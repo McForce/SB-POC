@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>GenerateLogsAction</name>
+        <label>GenerateLogsAction</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>ErrorUseCaseLogGenerator</actionName>
+        <actionType>apex</actionType>
+        <flowTransactionModel>Automatic</flowTransactionModel>
+        <inputParameters>
+            <name>selectedUseCase</name>
+            <value>
+                <elementReference>SelectedUseCase</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>ErrorUseCaseLogGenerator</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>65.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <assignments>
+        <name>Assign_Selected_Use_Cases</name>
+        <label>Assign Selected Use Cases</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>SelectedUseCase</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>useCasePicklist</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>GenerateLogsAction</targetReference>
+        </connector>
+    </assignments>
+    <choices>
+        <name>ContactOnboarding</name>
+        <choiceText>Contact Onboarding</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Contact Onboarding</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>MallPing</name>
+        <choiceText>Mall Ping</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Mall Ping</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>OSB_SolutionShowcase_CTRL</name>
+        <choiceText>OSB_SolutionShowcase_CTRL</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>OSB_SolutionShowcase_CTRL</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>OSBDashboard</name>
+        <choiceText>OSB Dashboard</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>OSB Dashboard</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>OSBHeader</name>
+        <choiceText>OSB Header</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>OSB Header</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>PingReg</name>
+        <choiceText>Ping Reg</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Ping Reg</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>TokenManager</name>
+        <choiceText>Token Manager</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Token Manager</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>TokenManagerTwo</name>
+        <choiceText>Token Manager Two</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Token Manager Two</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>UserSubscription</name>
+        <choiceText>User Subscription</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>User Subscription</stringValue>
+        </value>
+    </choices>
+    <customProperties>
+        <name>ScreenProgressIndicator</name>
+        <value>
+            <stringValue>{&quot;location&quot;:&quot;top&quot;,&quot;type&quot;:&quot;simple&quot;}</stringValue>
+        </value>
+    </customProperties>
+    <environments>Default</environments>
+    <interviewLabel>Error Log Simulation Screen Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Error Log Simulation Screen Flow</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <screens>
+        <name>SelectErrorUseCaseScreen</name>
+        <label>SelectErrorUseCaseScreen</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <connector>
+            <targetReference>Assign_Selected_Use_Cases</targetReference>
+        </connector>
+        <fields>
+            <name>useCasePicklist</name>
+            <choiceReferences>UserSubscription</choiceReferences>
+            <choiceReferences>TokenManager</choiceReferences>
+            <choiceReferences>TokenManagerTwo</choiceReferences>
+            <choiceReferences>PingReg</choiceReferences>
+            <choiceReferences>MallPing</choiceReferences>
+            <choiceReferences>OSBDashboard</choiceReferences>
+            <choiceReferences>ContactOnboarding</choiceReferences>
+            <choiceReferences>OSBHeader</choiceReferences>
+            <choiceReferences>OSB_SolutionShowcase_CTRL</choiceReferences>
+            <dataType>String</dataType>
+            <defaultValue>
+                <elementReference>AvailableUseCases</elementReference>
+            </defaultValue>
+            <fieldText>Select Error Use Case</fieldText>
+            <fieldType>DropdownBox</fieldType>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+            <styleProperties>
+                <verticalAlignment>
+                    <stringValue>top</stringValue>
+                </verticalAlignment>
+                <width>
+                    <stringValue>12</stringValue>
+                </width>
+            </styleProperties>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>SelectErrorUseCaseScreen</targetReference>
+        </connector>
+    </start>
+    <status>Draft</status>
+    <variables>
+        <name>AvailableUseCases</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>ErrorMessage</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>SelectedUseCase</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>SuccessMessage</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+    </variables>
+</Flow>
