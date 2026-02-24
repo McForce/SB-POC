@@ -19,22 +19,6 @@
         </connector>
     </assignments>
     <assignments>
-        <name>Assign_Message</name>
-        <label>Assign Message</label>
-        <locationX>601</locationX>
-        <locationY>932</locationY>
-        <assignmentItems>
-            <assignToReference>VarStack</assignToReference>
-            <operator>Assign</operator>
-            <value>
-                <elementReference>Loop_Logs.Platform_Log_Messages__c</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
-            <targetReference>Assign_to_Col_Stacks</targetReference>
-        </connector>
-    </assignments>
-    <assignments>
         <name>Assign_Record</name>
         <label>Assign Record</label>
         <locationX>512</locationX>
@@ -44,6 +28,20 @@
             <operator>Assign</operator>
             <value>
                 <elementReference>Get_Parent_Record.Id</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>VarStack</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>$Record.Platform_Log_Messages__c</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>VarStack</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <stringValue>;</stringValue>
             </value>
         </assignmentItems>
         <connector>
@@ -90,35 +88,19 @@
         </connector>
     </assignments>
     <assignments>
-        <name>Assign_Stacks_Col_to_Var</name>
-        <label>Assign Stacks Col to Var</label>
-        <locationX>231</locationX>
-        <locationY>1014</locationY>
-        <assignmentItems>
-            <assignToReference>ColStacks</assignToReference>
-            <operator>Add</operator>
-            <value>
-                <elementReference>FinalVarStack</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
-            <targetReference>Update_to_Parent_Record</targetReference>
-        </connector>
-    </assignments>
-    <assignments>
         <name>Assign_to_Col_Stacks</name>
         <label>Assign to Col Stacks</label>
-        <locationX>834</locationX>
-        <locationY>957</locationY>
+        <locationX>629</locationX>
+        <locationY>918</locationY>
         <assignmentItems>
-            <assignToReference>ColStacks</assignToReference>
+            <assignToReference>VarStack</assignToReference>
             <operator>Add</operator>
             <value>
-                <elementReference>VarStack</elementReference>
+                <elementReference>Loop_Logs.Platform_Log_Messages__c</elementReference>
             </value>
         </assignmentItems>
         <assignmentItems>
-            <assignToReference>ColStacks</assignToReference>
+            <assignToReference>VarStack</assignToReference>
             <operator>Add</operator>
             <value>
                 <stringValue>;</stringValue>
@@ -197,10 +179,10 @@
         <collectionReference>Get_Logs</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
-            <targetReference>Assign_Message</targetReference>
+            <targetReference>Assign_to_Col_Stacks</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
-            <targetReference>Assign_Stacks_Col_to_Var</targetReference>
+            <targetReference>Update_to_Parent_Record</targetReference>
         </noMoreValuesConnector>
     </loops>
     <processMetadataValues>
@@ -357,7 +339,7 @@
     <recordUpdates>
         <name>Update_to_Parent_Record</name>
         <label>Update to Parent Record</label>
-        <locationX>75</locationX>
+        <locationX>74</locationX>
         <locationY>1055</locationY>
         <connector>
             <targetReference>Update_Related_Records</targetReference>
@@ -377,7 +359,7 @@
         <inputAssignments>
             <field>Stack_Traces__c</field>
             <value>
-                <elementReference>FinalVarStack</elementReference>
+                <elementReference>VarStack</elementReference>
             </value>
         </inputAssignments>
         <inputReference>$Record</inputReference>
@@ -402,7 +384,7 @@
         </scheduledPaths>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <transforms>
         <name>Transform_all</name>
         <label>Transform all</label>
