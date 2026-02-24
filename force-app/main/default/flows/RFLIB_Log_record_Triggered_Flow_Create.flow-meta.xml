@@ -27,6 +27,13 @@
             <assignToReference>VarStack</assignToReference>
             <operator>Assign</operator>
             <value>
+                <elementReference>FormulaLogPrefix</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>VarStack</assignToReference>
+            <operator>Add</operator>
+            <value>
                 <elementReference>Loop_Logs.Platform_Log_Messages__c</elementReference>
             </value>
         </assignmentItems>
@@ -186,6 +193,11 @@
         <name>Fiveminute</name>
         <dataType>DateTime</dataType>
         <expression>{!$Record.CreatedDate} - (5/1440)</expression>
+    </formulas>
+    <formulas>
+        <name>FormulaLogPrefix</name>
+        <dataType>String</dataType>
+        <expression>"Log nr " &amp; TEXT({!SequenceNumber}) &amp; ": "</expression>
     </formulas>
     <interviewLabel>RFLIB Log record Triggered Flow Create {!$Flow.CurrentDateTime}</interviewLabel>
     <label>RFLIB Log record Triggered Flow Create</label>
