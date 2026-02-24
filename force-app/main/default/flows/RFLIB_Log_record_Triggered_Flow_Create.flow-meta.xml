@@ -3,6 +3,38 @@
     <apiVersion>65.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
     <assignments>
+        <name>Add_Assignment</name>
+        <label>Add Assignment</label>
+        <locationX>964</locationX>
+        <locationY>1077</locationY>
+        <assignmentItems>
+            <assignToReference>SequenceNumber</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <numberValue>1.0</numberValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Assign_Sequence_to_Record</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>Assign_Message</name>
+        <label>Assign Message</label>
+        <locationX>613</locationX>
+        <locationY>904</locationY>
+        <assignmentItems>
+            <assignToReference>VarStack</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Loop_Logs.Platform_Log_Messages__c</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Assign_to_Col_Stacks</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Assign_Record</name>
         <label>Assign Record</label>
         <locationX>512</locationX>
@@ -18,11 +50,82 @@
             <targetReference>Was_Parent_Found</targetReference>
         </connector>
     </assignments>
+    <assignments>
+        <name>Assign_Record_to_Col</name>
+        <label>Assign Record to Col</label>
+        <locationX>372</locationX>
+        <locationY>1180</locationY>
+        <assignmentItems>
+            <assignToReference>Col</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>VarLog</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Loop_Logs</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>Assign_Sequence_to_Record</name>
+        <label>Assign Sequence to Record</label>
+        <locationX>509</locationX>
+        <locationY>1303</locationY>
+        <assignmentItems>
+            <assignToReference>VarLog.Id</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Loop_Logs.Id</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>VarLog.Sequence_Number__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>SequenceNumber</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Assign_Record_to_Col</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>Assign_to_Col_Stacks</name>
+        <label>Assign to Col Stacks</label>
+        <locationX>795</locationX>
+        <locationY>935</locationY>
+        <assignmentItems>
+            <assignToReference>ColStacks</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>VarStack</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Add_Assignment</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>test</name>
+        <label>test</label>
+        <locationX>501</locationX>
+        <locationY>156</locationY>
+        <assignmentItems>
+            <assignToReference>VarTest</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>test</stringValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Update_Test</targetReference>
+        </connector>
+    </assignments>
     <decisions>
         <name>Was_Parent_Found</name>
         <label>Was Parent Found?</label>
-        <locationX>512</locationX>
-        <locationY>540</locationY>
+        <locationX>509</locationX>
+        <locationY>621</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
             <name>Parent</name>
@@ -35,7 +138,7 @@
                 </rightValue>
             </conditions>
             <connector>
-                <targetReference>Update_to_Parent_Record</targetReference>
+                <targetReference>Get_Logs</targetReference>
             </connector>
             <label>Parent</label>
         </rules>
@@ -56,8 +159,27 @@
         </rules>
     </decisions>
     <environments>Default</environments>
+    <formulas>
+        <name>Fiveminute</name>
+        <dataType>DateTime</dataType>
+        <expression>{!$Record.CreatedDate} - (5/1440)</expression>
+    </formulas>
     <interviewLabel>RFLIB Log record Triggered Flow Create {!$Flow.CurrentDateTime}</interviewLabel>
     <label>RFLIB Log record Triggered Flow Create</label>
+    <loops>
+        <name>Loop_Logs</name>
+        <label>Loop Logs</label>
+        <locationX>389</locationX>
+        <locationY>980</locationY>
+        <collectionReference>Get_Logs</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Assign_Message</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Update_to_Parent_Record</targetReference>
+        </noMoreValuesConnector>
+    </loops>
     <processMetadataValues>
         <name>BuilderType</name>
         <value>
@@ -78,10 +200,63 @@
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
     <recordLookups>
+        <name>Get_All</name>
+        <label>Get All</label>
+        <locationX>250</locationX>
+        <locationY>246</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Transform_all</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Owner_Id__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Owner_Id__c</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>RFLIB_Log__c</object>
+        <sortField>CreatedDate</sortField>
+        <sortOrder>Asc</sortOrder>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Logs</name>
+        <label>Get Logs</label>
+        <locationX>350</locationX>
+        <locationY>748</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Loop_Logs</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Owner_Id__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Owner_Id__c</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Id</field>
+            <operator>NotEqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>RFLIB_Log__c</object>
+        <sortField>Id</sortField>
+        <sortOrder>Asc</sortOrder>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
         <name>Get_Parent_Record</name>
         <label>Get Parent Record</label>
-        <locationX>512</locationX>
-        <locationY>324</locationY>
+        <locationX>811</locationX>
+        <locationY>426</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
             <targetReference>Assign_Record</targetReference>
@@ -94,6 +269,13 @@
                 <elementReference>$Record.Owner_Id__c</elementReference>
             </value>
         </filters>
+        <filters>
+            <field>CreatedDate</field>
+            <operator>GreaterThan</operator>
+            <value>
+                <elementReference>Fiveminute</elementReference>
+            </value>
+        </filters>
         <getFirstRecordOnly>true</getFirstRecordOnly>
         <object>RFLIB_Log__c</object>
         <sortField>Id</sortField>
@@ -103,8 +285,8 @@
     <recordUpdates>
         <name>Update_Child</name>
         <label>Update Child</label>
-        <locationX>512</locationX>
-        <locationY>648</locationY>
+        <locationX>796</locationX>
+        <locationY>676</locationY>
         <inputAssignments>
             <field>Parent_Child__c</field>
             <value>
@@ -120,14 +302,59 @@
         <inputReference>$Record</inputReference>
     </recordUpdates>
     <recordUpdates>
+        <name>Update_Related_Records</name>
+        <label>Update Related Records</label>
+        <locationX>70</locationX>
+        <locationY>1264</locationY>
+        <inputReference>Col</inputReference>
+    </recordUpdates>
+    <recordUpdates>
+        <name>Update_Test</name>
+        <label>Update Test</label>
+        <locationX>349</locationX>
+        <locationY>164</locationY>
+        <connector>
+            <targetReference>Get_All</targetReference>
+        </connector>
+        <inputAssignments>
+            <field>Platform_Log_Level__c</field>
+            <value>
+                <elementReference>VarTest</elementReference>
+            </value>
+        </inputAssignments>
+        <inputReference>$Record</inputReference>
+    </recordUpdates>
+    <recordUpdates>
+        <name>Update_tests</name>
+        <label>Update tests</label>
+        <locationX>40</locationX>
+        <locationY>554</locationY>
+        <inputReference>Transform_all</inputReference>
+    </recordUpdates>
+    <recordUpdates>
         <name>Update_to_Parent_Record</name>
         <label>Update to Parent Record</label>
-        <locationX>248</locationX>
-        <locationY>648</locationY>
+        <locationX>158</locationX>
+        <locationY>1073</locationY>
+        <connector>
+            <targetReference>Update_Related_Records</targetReference>
+        </connector>
         <inputAssignments>
             <field>Parent_Child__c</field>
             <value>
                 <stringValue>Parent</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Sequence_Number__c</field>
+            <value>
+                <numberValue>1.0</numberValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Stack_Traces__c</field>
+            <value>
+                <elementReference>VarStack</elementReference>
             </value>
         </inputAssignments>
         <inputReference>$Record</inputReference>
@@ -137,6 +364,9 @@
         <locationY>48</locationY>
         <object>RFLIB_Log__c</object>
         <recordTriggerType>Create</recordTriggerType>
+        <scheduledPaths>
+            <pathType>AsyncAfterCommit</pathType>
+        </scheduledPaths>
         <scheduledPaths>
             <name>One_Minute_After_Creation</name>
             <connector>
@@ -150,8 +380,86 @@
         <triggerType>RecordAfterSave</triggerType>
     </start>
     <status>Active</status>
+    <transforms>
+        <name>Transform_all</name>
+        <label>Transform all</label>
+        <locationX>178</locationX>
+        <locationY>408</locationY>
+        <connector>
+            <targetReference>Update_tests</targetReference>
+        </connector>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <objectType>RFLIB_Log__c</objectType>
+        <scale>0</scale>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+        <transformValues>
+            <transformValueActions>
+                <outputFieldApiName>Id</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <elementReference>Get_All[$EachItem].Id</elementReference>
+                </value>
+            </transformValueActions>
+            <transformValueActions>
+                <outputFieldApiName>Platform_Log_Level__c</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <stringValue>test</stringValue>
+                </value>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <variables>
+        <name>Col</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>RFLIB_Log__c</objectType>
+    </variables>
+    <variables>
+        <name>ColStacks</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
     <variables>
         <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>SequenceNumber</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+        <value>
+            <numberValue>1.0</numberValue>
+        </value>
+    </variables>
+    <variables>
+        <name>VarLog</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>RFLIB_Log__c</objectType>
+    </variables>
+    <variables>
+        <name>VarStack</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>VarTest</name>
         <dataType>String</dataType>
         <isCollection>false</isCollection>
         <isInput>false</isInput>
