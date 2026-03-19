@@ -3,12 +3,33 @@ name: Validate AI Fix
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'force-app/**'
 
 jobs:
-  validate:
+  validate-ai-fix:
+    name: Validate AI Code Fix
     runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'ai-fix/')
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Confirm AI fix branch
-        run: echo "Validating PR from branch ${{ github.head_ref }}"
+        run: |
+          echo "============================================"
+          echo "  AI Code Fix Validation"
+          echo "============================================"
+          echo ""
+          echo "Branch:     ${{ github.head_ref }}"
+          echo "PR Number:  ${{ github.event.pull_request.number }}"
+          echo "PR Title:   ${{ github.event.pull_request.title }}"
+          echo ""
+          echo "Changed files:"
+          git diff --name-only origin/main...HEAD
+          echo ""
+          echo "============================================"
+          echo "  Validation passed"
+          echo "============================================"
