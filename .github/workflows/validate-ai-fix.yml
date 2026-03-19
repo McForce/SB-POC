@@ -1,0 +1,14 @@
+name: Validate AI Fix
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm AI fix branch
+        run: echo "Validating PR from branch ${{ github.head_ref }}"
