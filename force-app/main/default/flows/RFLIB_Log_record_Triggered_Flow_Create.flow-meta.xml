@@ -34,14 +34,14 @@
             <assignToReference>VarStack</assignToReference>
             <operator>Add</operator>
             <value>
-                <elementReference>$Record.Platform_Log_Messages__c</elementReference>
+                <stringValue>Log Number 1 ; </stringValue>
             </value>
         </assignmentItems>
         <assignmentItems>
             <assignToReference>VarStack</assignToReference>
             <operator>Add</operator>
             <value>
-                <stringValue>;</stringValue>
+                <elementReference>$Record.Platform_Log_Messages__c</elementReference>
             </value>
         </assignmentItems>
         <connector>
@@ -51,8 +51,8 @@
     <assignments>
         <name>Assign_Record_to_Col</name>
         <label>Assign Record to Col</label>
-        <locationX>372</locationX>
-        <locationY>1180</locationY>
+        <locationX>342</locationX>
+        <locationY>1334</locationY>
         <assignmentItems>
             <assignToReference>Col</assignToReference>
             <operator>Add</operator>
@@ -61,7 +61,7 @@
             </value>
         </assignmentItems>
         <connector>
-            <targetReference>Loop_Logs</targetReference>
+            <targetReference>Assign_to_Col_Stacks</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -90,8 +90,15 @@
     <assignments>
         <name>Assign_to_Col_Stacks</name>
         <label>Assign to Col Stacks</label>
-        <locationX>629</locationX>
-        <locationY>918</locationY>
+        <locationX>341</locationX>
+        <locationY>1210</locationY>
+        <assignmentItems>
+            <assignToReference>VarStack</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>FormulaLogPrefix</elementReference>
+            </value>
+        </assignmentItems>
         <assignmentItems>
             <assignToReference>VarStack</assignToReference>
             <operator>Add</operator>
@@ -99,15 +106,8 @@
                 <elementReference>Loop_Logs.Platform_Log_Messages__c</elementReference>
             </value>
         </assignmentItems>
-        <assignmentItems>
-            <assignToReference>VarStack</assignToReference>
-            <operator>Add</operator>
-            <value>
-                <stringValue>;</stringValue>
-            </value>
-        </assignmentItems>
         <connector>
-            <targetReference>Add_Assignment</targetReference>
+            <targetReference>Loop_Logs</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -169,6 +169,11 @@
         <dataType>DateTime</dataType>
         <expression>{!$Record.CreatedDate} - (5/1440)</expression>
     </formulas>
+    <formulas>
+        <name>FormulaLogPrefix</name>
+        <dataType>String</dataType>
+        <expression>&quot;; &quot; &amp; &quot;Log nr &quot;  &amp; TEXT({!SequenceNumber}) &amp; &quot;: &quot;</expression>
+    </formulas>
     <interviewLabel>RFLIB Log record Triggered Flow Create {!$Flow.CurrentDateTime}</interviewLabel>
     <label>RFLIB Log record Triggered Flow Create</label>
     <loops>
@@ -179,7 +184,7 @@
         <collectionReference>Get_Logs</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
-            <targetReference>Assign_to_Col_Stacks</targetReference>
+            <targetReference>Add_Assignment</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
             <targetReference>Update_to_Parent_Record</targetReference>
