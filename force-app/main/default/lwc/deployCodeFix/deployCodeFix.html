@@ -1,0 +1,194 @@
+<template>
+    <!-- ─── Main Card ─────────────────────────────────────────────── -->
+    <lightning-card title="GitHub Code Fix" icon-name="custom:custom56">
+
+        <!-- Status Banner -->
+        <div class="slds-p-horizontal_medium slds-p-vertical_small">
+            <div class={statusBannerClass}>
+                <lightning-icon 
+                    icon-name={statusIconName} 
+                    size="x-small" 
+                    class="slds-m-right_x-small">
+                </lightning-icon>
+                <span class="slds-text-body_small">{statusMessage}</span>
+            </div>
+        </div>
+
+        <!-- Fix Details Summary -->
+        <template if:true={hasFixAvailable}>
+            <div class="slds-p-horizontal_medium slds-p-bottom_small">
+                <dl class="slds-dl_horizontal slds-text-body_small">
+                    <dt class="slds-dl_horizontal__label slds-text-color_weak">File Path:</dt>
+                    <dd class="slds-dl_horizontal__detail">
+                        <lightning-formatted-text value={fixDetails.filePath}></lightning-formatted-text>
+                    </dd>
+                    <dt class="slds-dl_horizontal__label slds-text-color_weak">Commit Message:</dt>
+                    <dd class="slds-dl_horizontal__detail">
+                        <lightning-formatted-text value={fixDetails.commitMessage}></lightning-formatted-text>
+                    </dd>
+                    <dt class="slds-dl_horizontal__label slds-text-color_weak">Correlation ID:</dt>
+                    <dd class="slds-dl_horizontal__detail">
+                        <lightning-badge label={fixDetails.correlationId}></lightning-badge>
+                    </dd>
+                </dl>
+            </div>
+        </template>
+
+        <!-- Existing PR Link (if already deployed) -->
+        <template if:true={isAlreadyDeployed}>
+            <div class="slds-p-horizontal_medium slds-p-bottom_small">
+                <lightning-button 
+                    label="View Pull Request" 
+                    variant="neutral"
+                    icon-name="utility:new_window"
+                    onclick={handleOpenPr}>
+                </lightning-button>
+            </div>
+        </template>
+
+        <!-- Error Message -->
+        <template if:true={errorMessage}>
+            <div class="slds-p-horizontal_medium slds-p-bottom_small">
+                <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                    <span class="slds-assistive-text">error</span>
+                    <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                    <span>{errorMessage}</span>
+                </div>
+            </div>
+        </template>
+
+        <!-- Deploy Button -->
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+            <lightning-button 
+                label={buttonLabel}
+                variant={buttonVariant}
+                icon-name="utility:upload"
+                disabled={isButtonDisabled}
+                onclick={handleDeployClick}>
+            </lightning-button>
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Deploying..." size="small" class="slds-m-left_small"></lightning-spinner>
+            </template>
+        </div>
+
+    </lightning-card>
+
+    <!-- ─── Confirmation Modal ────────────────────────────────────── -->
+    <template if:true={showConfirmModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+
+                <!-- Header -->
+                <div class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" onclick={handleCancelDeploy}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">
+                        <lightning-icon icon-name="utility:warning" size="small" class="slds-m-right_x-small"></lightning-icon>
+                        Confirm GitHub Deployment
+                    </h2>
+                </div>
+
+                <!-- Body -->
+                <div class="slds-modal__content slds-p-around_medium" style="max-height: 60vh; overflow-y: auto;">
+                    
+                    <!-- Governance Warning -->
+                    <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_medium" role="alert">
+                        <span class="slds-assistive-text">warning</span>
+                        <p class="slds-text-body_small">
+                            This will create a <strong>new branch</strong> and <strong>Pull Request</strong> in the repository. 
+                            The fix will <strong>not</strong> be merged automatically — it requires human review and approval.
+                        </p>
+                    </div>
+
+                    <!-- Fix Summary -->
+                    <div class="slds-m-bottom_medium">
+                        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Deployment Details</h3>
+                        <dl class="slds-dl_horizontal slds-text-body_small">
+                            <dt class="slds-dl_horizontal__label">File:</dt>
+                            <dd class="slds-dl_horizontal__detail"><code>{fixDetails.filePath}</code></dd>
+                            <dt class="slds-dl_horizontal__label">Branch:</dt>
+                            <dd class="slds-dl_horizontal__detail"><code>ai-fix/{fixDetails.correlationId}</code></dd>
+                            <dt class="slds-dl_horizontal__label">Commit:</dt>
+                            <dd class="slds-dl_horizontal__detail">{fixDetails.commitMessage}</dd>
+                        </dl>
+                    </div>
+
+                    <!-- Code Preview -->
+                    <div class="slds-m-bottom_medium">
+                        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Code Preview</h3>
+                        <div class="code-preview">
+                            <pre class="slds-text-body_small"><code>{truncatedFix}</code></pre>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div class="slds-modal__footer">
+                    <lightning-button label="Cancel" variant="neutral" onclick={handleCancelDeploy}></lightning-button>
+                    <lightning-button label="Confirm & Deploy" variant="brand" 
+                                     icon-name="utility:upload" onclick={handleConfirmDeploy}
+                                     class="slds-m-left_x-small"></lightning-button>
+                </div>
+
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- ─── Result Modal ──────────────────────────────────────────── -->
+    <template if:true={showResultModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+
+                <!-- Header -->
+                <div class="slds-modal__header slds-theme_success">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" onclick={handleCloseResult}>
+                        <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">
+                        <lightning-icon icon-name="utility:check" size="small" class="slds-m-right_x-small"></lightning-icon>
+                        Fix Deployed Successfully
+                    </h2>
+                </div>
+
+                <!-- Body -->
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-text-align_center slds-m-bottom_medium">
+                        <lightning-icon icon-name="action:approval" size="large"></lightning-icon>
+                    </div>
+
+                    <dl class="slds-dl_horizontal slds-m-bottom_medium">
+                        <dt class="slds-dl_horizontal__label">Branch:</dt>
+                        <dd class="slds-dl_horizontal__detail"><code>{result.branchName}</code></dd>
+                        <dt class="slds-dl_horizontal__label">Commit SHA:</dt>
+                        <dd class="slds-dl_horizontal__detail"><code>{result.commitSha}</code></dd>
+                    </dl>
+
+                    <div class="slds-text-align_center">
+                        <lightning-button label="Open Pull Request" variant="brand" 
+                                         icon-name="utility:new_window" onclick={handleOpenPr}>
+                        </lightning-button>
+                    </div>
+
+                    <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-top_medium" role="alert">
+                        <p class="slds-text-body_small">
+                            Remember: This Pull Request requires <strong>human review and approval</strong> before merge.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="slds-modal__footer">
+                    <lightning-button label="Close" variant="neutral" onclick={handleCloseResult}></lightning-button>
+                </div>
+
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+</template>
