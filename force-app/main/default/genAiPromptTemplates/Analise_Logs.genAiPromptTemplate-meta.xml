@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <developerName>Analise_Logs</developerName>
+    <masterLabel>Analise Logs</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>test
+</content>
+        <inputs>
+            <apiName>AgentResponse</apiName>
+            <definition>primitive://String</definition>
+            <referenceName>Input:AgentResponse</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Draft</status>
+        <versionIdentifier>LE08QJqc7qgzwoxcXF6CEMC7/EUSLsjFkUuDFNu/Lwo=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__agentEval</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <developerName>Test</developerName>
+    <masterLabel>Test</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a Salesforce Developer
+
+Please analyze the Apex Class that is provided to you in the Prompt {!$Input:Apex} {!$EinsteinSearch:ApexClass_Home_Retriever_1Cx_TTd61f62b34.results}
+
+And tell the user what the Apex Class does
+</content>
+        <inputs>
+            <apiName>Apex</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Apex</masterLabel>
+            <referenceName>Input:Apex</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultBedrockAnthropicClaude45Haiku</primaryModel>
+        <status>Draft</status>
+        <templateDataProviders>
+            <definition>invocable://getEinsteinRetrieverResults/ApexClass_Home_Retriever_1Cx_TTd61f62b34</definition>
+            <label>ApexClass_Home Retriever</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>searchText</parameterName>
+                <valueExpression>{!$Input:Apex}</valueExpression>
+            </parameters>
+            <referenceName>EinsteinSearch:ApexClass_Home_Retriever_1Cx_TTd61f62b34</referenceName>
+        </templateDataProviders>
+        <versionIdentifier>LE08QJqc7qgzwoxcXF6CEMC7/EUSLsjFkUuDFNu/Lwo=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>
