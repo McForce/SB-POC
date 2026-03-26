@@ -49,26 +49,10 @@
         </connector>
     </assignments>
     <assignments>
-        <name>Assign_Record_to_Col</name>
-        <label>Assign Record to Col</label>
-        <locationX>342</locationX>
-        <locationY>1334</locationY>
-        <assignmentItems>
-            <assignToReference>Col</assignToReference>
-            <operator>Add</operator>
-            <value>
-                <elementReference>VarLog</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
-            <targetReference>Assign_to_Col_Stacks</targetReference>
-        </connector>
-    </assignments>
-    <assignments>
         <name>Assign_Sequence_to_Record</name>
         <label>Assign Sequence to Record</label>
-        <locationX>509</locationX>
-        <locationY>1303</locationY>
+        <locationX>510</locationX>
+        <locationY>1304</locationY>
         <assignmentItems>
             <assignToReference>VarLog.Id</assignToReference>
             <operator>Assign</operator>
@@ -81,29 +65,6 @@
             <operator>Assign</operator>
             <value>
                 <elementReference>SequenceNumber</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
-            <targetReference>Assign_Record_to_Col</targetReference>
-        </connector>
-    </assignments>
-    <assignments>
-        <name>Assign_to_Col_Stacks</name>
-        <label>Assign to Col Stacks</label>
-        <locationX>341</locationX>
-        <locationY>1210</locationY>
-        <assignmentItems>
-            <assignToReference>VarStack</assignToReference>
-            <operator>Add</operator>
-            <value>
-                <elementReference>FormulaLogPrefix</elementReference>
-            </value>
-        </assignmentItems>
-        <assignmentItems>
-            <assignToReference>VarStack</assignToReference>
-            <operator>Add</operator>
-            <value>
-                <elementReference>Loop_Logs.Platform_Log_Messages__c</elementReference>
             </value>
         </assignmentItems>
         <connector>
@@ -314,7 +275,7 @@
     <recordUpdates>
         <name>Update_Related_Records</name>
         <label>Update Related Records</label>
-        <locationX>50</locationX>
+        <locationX>51</locationX>
         <locationY>1302</locationY>
         <inputReference>Col</inputReference>
     </recordUpdates>
@@ -345,7 +306,7 @@
         <name>Update_to_Parent_Record</name>
         <label>Update to Parent Record</label>
         <locationX>74</locationX>
-        <locationY>1055</locationY>
+        <locationY>1054</locationY>
         <connector>
             <targetReference>Update_Related_Records</targetReference>
         </connector>
@@ -359,12 +320,6 @@
             <field>Sequence_Number__c</field>
             <value>
                 <numberValue>1.0</numberValue>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Stack_Traces__c</field>
-            <value>
-                <elementReference>VarStack</elementReference>
             </value>
         </inputAssignments>
         <inputReference>$Record</inputReference>
@@ -389,7 +344,7 @@
         </scheduledPaths>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Active</status>
+    <status>Obsolete</status>
     <transforms>
         <name>Transform_all</name>
         <label>Transform all</label>
