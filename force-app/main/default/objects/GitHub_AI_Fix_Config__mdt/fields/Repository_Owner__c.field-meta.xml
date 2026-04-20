@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Repository_Owner__c</fullName>
+    <description>GitHub username or organisation that owns the target repository (e.g. McForce).</description>
+    <externalId>false</externalId>
+    <label>Repository Owner</label>
+    <length>100</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

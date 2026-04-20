@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Stores GitHub connection configuration for the AI Fix automation pipeline.</description>
+    <label>GitHub AI Fix Config</label>
+    <pluralLabel>GitHub AI Fix Configs</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>
