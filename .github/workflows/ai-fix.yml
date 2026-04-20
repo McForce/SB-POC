@@ -4,10 +4,427 @@ on:
   repository_dispatch:
     types: [ai-fix-request]
   workflow_dispatch:
+    inputs:
+      incidentId:
+        description: 'Incident Record ID (for manual testing)'
+        required: false
+        default: 'TEST-MANUAL-001'
+      rootCauseDetermination:
+        description: 'Root Cause Determination text (for manual testing)'
+        required: false
+        default: 'The issue is in Mall_Ping_AuthProviderCustomPlugin.handleCallback where userAttributes is null.'
 
 jobs:
   process-incident:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+
     steps:
-      - name: Acknowledge trigger
-        run: echo "AI Fix request received"
+      # =========================================================
+      # STEP 1: Log incident received
+      # =========================================================
+      - name: Log incident received
+        id: log
+        run: |
+          echo "=========================================="
+          echo "AI Fix Agent - Incident Received"
+          echo "=========================================="
+          
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "Source: Salesforce dispatch"
+            echo "Incident ID: ${{ github.event.client_payload.incidentId }}"
+            echo "Incident Name: ${{ github.event.client_payload.incidentName }}"
+          else
+            echo "Source: Manual trigger"
+            echo "Incident ID: ${{ github.event.inputs.incidentId }}"
+          fi
+          
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "=========================================="
+
+      # =========================================================
+      # STEP 2: Checkout repository
+      # =========================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # =========================================================
+      # STEP 3: Configure Git
+      # =========================================================
+      - name: Configure Git
+        run: |
+          git config --global user.name "OneHub AI Fix Agent"
+          git config --global user.email "ai-fix-agent@onehub.local"
+
+      # =========================================================
+      # STEP 4: Extract incident data into environment variables
+      # =========================================================
+      - name: Extract incident data
+        id: extract
+        run: |
+          # Determine data source based on trigger type
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            INCIDENT_ID="${{ github.event.client_payload.incidentId }}"
+            INCIDENT_NAME="${{ github.event.client_payload.incidentName }}"
+            # Save root cause to file to handle multiline content safely
+            cat > /tmp/root-cause.txt << 'ROOTCAUSE_EOF'
+          ${{ github.event.client_payload.rootCauseDetermination }}
+          ROOTCAUSE_EOF
+          else
+            INCIDENT_ID="${{ github.event.inputs.incidentId }}"
+            INCIDENT_NAME="Manual Test"
+            cat > /tmp/root-cause.txt << 'ROOTCAUSE_EOF'
+          ${{ github.event.inputs.rootCauseDetermination }}
+          ROOTCAUSE_EOF
+          fi
+          
+          echo "incident_id=${INCIDENT_ID}" >> $GITHUB_OUTPUT
+          echo "incident_name=${INCIDENT_NAME}" >> $GITHUB_OUTPUT
+          
+          echo "Incident ID: ${INCIDENT_ID}"
+          echo "Root cause saved to /tmp/root-cause.txt"
+          echo "--- Root Cause Content ---"
+          cat /tmp/root-cause.txt
+          echo "--- End Root Cause ---"
+
+      # =========================================================
+      # STEP 5: Identify the affected Apex class
+      # =========================================================
+      - name: Identify affected Apex class
+        id: identify
+        run: |
+          ROOT_CAUSE=$(cat /tmp/root-cause.txt)
+          
+          # Get list of all Apex class names in the repo
+          CLASS_LIST=$(find force-app/main/default/classes -name "*.cls" -not -name "*Test.cls" | xargs -I {} basename {} .cls)
+          
+          echo "Scanning Root Cause Determination for known Apex class names..."
+          
+          FOUND_CLASS=""
+          
+          # Search for each class name in the root cause text
+          for CLASS_NAME in $CLASS_LIST; do
+            if echo "$ROOT_CAUSE" | grep -q "$CLASS_NAME"; then
+              FOUND_CLASS="$CLASS_NAME"
+              echo "✓ Matched class: $CLASS_NAME"
+              break
+            fi
+          done
+          
+          if [ -z "$FOUND_CLASS" ]; then
+            echo "ERROR: Could not identify Apex class from Root Cause Determination"
+            echo "Root cause content:"
+            cat /tmp/root-cause.txt
+            echo ""
+            echo "Available classes:"
+            echo "$CLASS_LIST"
+            exit 1
+          fi
+          
+          CLASS_FILE="force-app/main/default/classes/${FOUND_CLASS}.cls"
+          
+          if [ ! -f "$CLASS_FILE" ]; then
+            echo "ERROR: Class file not found: $CLASS_FILE"
+            exit 1
+          fi
+          
+          echo "class_name=${FOUND_CLASS}" >> $GITHUB_OUTPUT
+          echo "class_file=${CLASS_FILE}" >> $GITHUB_OUTPUT
+          
+          echo "Identified class: $FOUND_CLASS"
+          echo "File path: $CLASS_FILE"
+
+      # =========================================================
+      # STEP 6: Read the current Apex class content
+      # =========================================================
+      - name: Read current Apex file
+        id: read
+        run: |
+          CLASS_FILE="${{ steps.identify.outputs.class_file }}"
+          
+          echo "Reading file: $CLASS_FILE"
+          
+          # Copy the original content for comparison later
+          cp "$CLASS_FILE" /tmp/original-code.cls
+          
+          LINE_COUNT=$(wc -l < "$CLASS_FILE")
+          CHAR_COUNT=$(wc -c < "$CLASS_FILE")
+          
+          echo "File size: $LINE_COUNT lines, $CHAR_COUNT characters"
+          
+          if [ "$CHAR_COUNT" -gt 100000 ]; then
+            echo "WARNING: File is large (>100KB). May exceed Claude token limits."
+          fi
+
+      # =========================================================
+      # STEP 7: Call Claude API to generate the fix
+      # =========================================================
+      - name: Call Claude API
+        id: claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ORIGINAL_CODE=$(cat /tmp/original-code.cls)
+          ROOT_CAUSE=$(cat /tmp/root-cause.txt)
+          
+          # Build the prompt using jq for safe JSON construction
+          PROMPT=$(jq -n \
+            --arg code "$ORIGINAL_CODE" \
+            --arg cause "$ROOT_CAUSE" \
+            '"You are a senior Salesforce developer fixing an Apex class based on a Root Cause Determination.\n\nHere is the current Apex class:\n\n```apex\n" + $code + "\n```\n\nRoot Cause Determination:\n" + $cause + "\n\nInstructions:\n1. Analyse the root cause and identify the exact problem in the code\n2. Fix the issue following Apex best practices:\n   - Null safety / defensive coding\n   - Bulkification patterns\n   - Proper error handling with try-catch\n3. Match the existing code style exactly (indentation, naming, bracing)\n4. Add a brief inline comment explaining what was changed and why\n5. Do NOT change anything unrelated to the root cause\n\nReturn ONLY the complete fixed Apex class code. Do not include any markdown code fences, explanations, or commentary - just the raw Apex code that should replace the entire file."')
+          
+          # Build the full request body
+          jq -n \
+            --arg prompt "$PROMPT" \
+            '{
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 8192,
+              messages: [{
+                role: "user",
+                content: ($prompt | fromjson)
+              }]
+            }' > /tmp/claude-request.json
+          
+          echo "Calling Claude API..."
+          
+          HTTP_CODE=$(curl -s -o /tmp/claude-response.json -w "%{http_code}" \
+            -X POST https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d @/tmp/claude-request.json)
+          
+          echo "HTTP Status: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "ERROR: Claude API returned status $HTTP_CODE"
+            cat /tmp/claude-response.json
+            exit 1
+          fi
+          
+          # Extract the text content from the response
+          jq -r '.content[0].text' /tmp/claude-response.json > /tmp/fixed-code.cls
+          
+          # Strip markdown code fences if Claude included them despite instructions
+          sed -i '/^```apex$/d; /^```$/d' /tmp/fixed-code.cls
+          
+          FIXED_LINES=$(wc -l < /tmp/fixed-code.cls)
+          echo "Received fixed code: $FIXED_LINES lines"
+          
+          # Basic validation
+          if [ "$FIXED_LINES" -lt 3 ]; then
+            echo "ERROR: Claude response appears invalid (too short)"
+            cat /tmp/fixed-code.cls
+            exit 1
+          fi
+          
+          if ! grep -q "class " /tmp/fixed-code.cls; then
+            echo "ERROR: Claude response does not contain a class definition"
+            cat /tmp/fixed-code.cls
+            exit 1
+          fi
+
+      # =========================================================
+      # STEP 8: Write fixed code to the repository
+      # =========================================================
+      - name: Apply fix to file
+        id: apply
+        run: |
+          CLASS_FILE="${{ steps.identify.outputs.class_file }}"
+          
+          # Check if there's actually a difference
+          if diff -q /tmp/original-code.cls /tmp/fixed-code.cls > /dev/null; then
+            echo "WARNING: Claude returned identical code - no fix applied"
+            exit 1
+          fi
+          
+          # Apply the fix
+          cp /tmp/fixed-code.cls "$CLASS_FILE"
+          
+          echo "Fix applied to: $CLASS_FILE"
+          echo ""
+          echo "=== Diff Summary ==="
+          diff /tmp/original-code.cls "$CLASS_FILE" | head -100 || true
+          echo "=== End Diff ==="
+
+      # =========================================================
+      # STEP 9: Create branch and commit
+      # =========================================================
+      - name: Create branch and commit
+        id: commit
+        run: |
+          INCIDENT_ID="${{ steps.extract.outputs.incident_id }}"
+          CLASS_NAME="${{ steps.identify.outputs.class_name }}"
+          CLASS_FILE="${{ steps.identify.outputs.class_file }}"
+          
+          # Sanitise incident ID for branch name (remove special characters)
+          SAFE_ID=$(echo "$INCIDENT_ID" | tr -c '[:alnum:]-_' '-')
+          BRANCH_NAME="ai-fix/${SAFE_ID}"
+          
+          echo "Creating branch: $BRANCH_NAME"
+          
+          git checkout -b "$BRANCH_NAME"
+          git add "$CLASS_FILE"
+          
+          git commit -m "fix(${CLASS_NAME}): automated fix from AI Fix Agent
+
+          Correlation-ID: ${INCIDENT_ID}
+          Generated-By: Claude API via GitHub Actions
+          
+          This fix was generated automatically based on the Apex Code Root Cause
+          Determination from Agentforce. Human review required before merge."
+          
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          
+          echo "Pushing branch..."
+          git push origin "$BRANCH_NAME"
+
+      # =========================================================
+      # STEP 10: Create Pull Request
+      # =========================================================
+      - name: Create Pull Request
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          INCIDENT_ID="${{ steps.extract.outputs.incident_id }}"
+          INCIDENT_NAME="${{ steps.extract.outputs.incident_name }}"
+          CLASS_NAME="${{ steps.identify.outputs.class_name }}"
+          BRANCH_NAME="${{ steps.commit.outputs.branch_name }}"
+          
+          ROOT_CAUSE=$(cat /tmp/root-cause.txt)
+          
+          # Create PR body
+          cat > /tmp/pr-body.md << EOF
+          ## Incident Reference
+          
+          - **Correlation ID:** \`${INCIDENT_ID}\`
+          - **Incident Name:** ${INCIDENT_NAME}
+          - **Affected Class:** \`${CLASS_NAME}\`
+          
+          ## Root Cause Determination (from Agentforce)
+          
+          \`\`\`
+          ${ROOT_CAUSE}
+          \`\`\`
+          
+          ## Fix Applied
+          
+          This fix was generated automatically by the OneHub AI Fix Agent using Claude API based on the Root Cause Determination above.
+          
+          Please review the code changes carefully before merging.
+          
+          ## Governance
+          
+          - ⚠️ **Human review required before merge**
+          - This PR was generated automatically
+          - The AI does not have deployment permissions
+          - All code changes require human approval per team policy
+          
+          ---
+          *Generated by OneHub AI Fix Agent at $(date -u +%Y-%m-%dT%H:%M:%SZ)*
+          EOF
+          
+          PR_TITLE="AI Fix: ${CLASS_NAME} - Incident ${INCIDENT_ID}"
+          
+          # Create PR using GitHub API (gh CLI may not be available in all runners)
+          PR_URL=$(gh pr create \
+            --title "$PR_TITLE" \
+            --body-file /tmp/pr-body.md \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --label "ai-fix" 2>&1 || echo "")
+          
+          if [ -z "$PR_URL" ]; then
+            echo "WARNING: gh pr create failed, trying GitHub API directly..."
+            
+            PR_BODY=$(jq -Rs . < /tmp/pr-body.md)
+            
+            PR_RESPONSE=$(curl -s -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/${{ github.repository }}/pulls \
+              -d "{
+                \"title\": \"$PR_TITLE\",
+                \"body\": $PR_BODY,
+                \"head\": \"$BRANCH_NAME\",
+                \"base\": \"main\"
+              }")
+            
+            PR_URL=$(echo "$PR_RESPONSE" | jq -r '.html_url')
+          fi
+          
+          echo "Pull Request: $PR_URL"
+          echo "pr_url=${PR_URL}" >> $GITHUB_OUTPUT
+
+      # =========================================================
+      # STEP 11: Update Salesforce - Success
+      # =========================================================
+      - name: Update Salesforce status - PR Raised
+        if: success() && github.event_name == 'repository_dispatch'
+        env:
+          SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+          SF_ACCESS_TOKEN: ${{ secrets.SF_ACCESS_TOKEN }}
+        run: |
+          INCIDENT_ID="${{ steps.extract.outputs.incident_id }}"
+          
+          echo "Updating Salesforce record: $INCIDENT_ID"
+          
+          HTTP_STATUS=$(curl -s -o /tmp/sf-response.json -w "%{http_code}" -X PATCH \
+            "${SF_INSTANCE_URL}/services/data/v59.0/sobjects/rflib_Logs__c/${INCIDENT_ID}" \
+            -H "Authorization: Bearer ${SF_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"AI_Fix_Status__c": "PR Raised"}')
+          
+          if [ "$HTTP_STATUS" = "204" ]; then
+            echo "✓ Salesforce updated to 'PR Raised'"
+          else
+            echo "⚠ Salesforce update returned status $HTTP_STATUS"
+            cat /tmp/sf-response.json
+          fi
+
+      # =========================================================
+      # STEP 12: Update Salesforce - Failure
+      # =========================================================
+      - name: Update Salesforce status - Fix Failed
+        if: failure() && github.event_name == 'repository_dispatch'
+        env:
+          SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+          SF_ACCESS_TOKEN: ${{ secrets.SF_ACCESS_TOKEN }}
+        run: |
+          INCIDENT_ID="${{ steps.extract.outputs.incident_id }}"
+          
+          if [ -z "$INCIDENT_ID" ]; then
+            echo "No incident ID available - cannot update Salesforce"
+            exit 0
+          fi
+          
+          echo "Marking Salesforce record as failed: $INCIDENT_ID"
+          
+          curl -s -X PATCH \
+            "${SF_INSTANCE_URL}/services/data/v59.0/sobjects/rflib_Logs__c/${INCIDENT_ID}" \
+            -H "Authorization: Bearer ${SF_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"AI_Fix_Status__c": "Fix Failed"}'
+
+      # =========================================================
+      # STEP 13: Upload debug artifacts
+      # =========================================================
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-fix-debug-${{ steps.extract.outputs.incident_id }}
+          path: |
+            /tmp/root-cause.txt
+            /tmp/original-code.cls
+            /tmp/fixed-code.cls
+            /tmp/claude-response.json
+          retention-days: 30
+          if-no-files-found: warn
