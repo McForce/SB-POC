@@ -1,0 +1,12 @@
+name: AI Fix Agent
+
+on:
+  repository_dispatch:
+    types: [ai-fix-request]
+
+jobs:
+  process-incident:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acknowledge trigger
+        run: echo "AI Fix request received"
