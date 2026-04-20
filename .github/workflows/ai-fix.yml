@@ -3,7 +3,7 @@ name: AI Fix Agent
 on:
   repository_dispatch:
     types: [ai-fix-request]
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   process-incident:
