@@ -217,6 +217,93 @@ global class Mall_Ping_AuthProviderCustomPlugin implements Auth.AuthProviderPlug
         // This method extracts user information from the authorization provider's userinfo endpoint
         // and returns it as Auth.UserData object that Salesforce uses for user account provisioning
         
-        return null;
+        // FIX: Added null safety check for response to prevent NullPointerException
+        // Root cause: response or response.oauthToken could be null, causing userAttributes to be null
+        if (response == null || response.oauthToken == null) {
+            RFLIB_Logger logger = RFLIB_LoggerUtil.getLogger('Mall_Ping_AuthProviderCustomPlugin');
+            logger.error('getUserInfo called with null response or token');
+            throw new Auth.AuthProviderPluginException('Cannot retrieve user info: Invalid authentication response');
+        }
+        
+        try {
+            String userInfoEndpoint = authProviderConfiguration.get('User_Info_Endpoint__c');
+            
+            // FIX: Added null safety check for configuration
+            if (String.isBlank(userInfoEndpoint)) {
+                throw new Auth.AuthProviderPluginException('User Info Endpoint not configured');
+            }
+            
+            RFLIB_Logger logger = RFLIB_LoggerUtil.getLogger('Mall_Ping_AuthProviderCustomPlugin');
+            logger.info('Retrieving user info from endpoint: ' + userInfoEndpoint);
+            
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint(userInfoEndpoint);
+            req.setMethod('GET');
+            req.setHeader('Authorization', 'Bearer ' + response.oauthToken);
+            req.setHeader('Accept', 'application/json');
+            req.setTimeout(10000);
+            
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+            
+            if (res.getStatusCode() == 200) {
+                Map<String, Object> userAttributes = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+                
+                // FIX: Added null safety check for userAttributes to prevent NullPointerException
+                // This is the core fix for the root cause: userAttributes could be null if JSON parsing fails
+                if (userAttributes == null) {
+                    logger.error('Failed to parse user info response: userAttributes is null');
+                    throw new Auth.AuthProviderPluginException('Invalid user info response format');
+                }
+                
+                logger.info('Successfully retrieved user info');
+                
+                // FIX: Added defensive coding with safe string extraction using ternary operators
+                // This prevents NullPointerException when userAttributes contains null values
+                String userId = userAttributes.containsKey('sub') ? String.valueOf(userAttributes.get('sub')) : null;
+                String firstName = userAttributes.containsKey('given_name') ? String.valueOf(userAttributes.get('given_name')) : '';
+                String lastName = userAttributes.containsKey('family_name') ? String.valueOf(userAttributes.get('family_name')) : '';
+                String fullName = userAttributes.containsKey('name') ? String.valueOf(userAttributes.get('name')) : (firstName + ' ' + lastName).trim();
+                String email = userAttributes.containsKey('email') ? String.valueOf(userAttributes.get('email')) : null;
+                String username = email;
+                
+                // FIX: Added validation for required fields
+                if (String.isBlank(userId) || String.isBlank(email)) {
+                    logger.error('Missing required user attributes: userId or email is blank');
+                    throw new Auth.AuthProviderPluginException('User info missing required fields');
+                }
+                
+                return new Auth.UserData(
+                    userId,        // identifier
+                    firstName,     // firstName
+                    lastName,      // lastName
+                    fullName,      // fullName
+                    email,         // email
+                    null,          // link
+                    username,      // username
+                    null,          // locale
+                    'Ping',        // provider
+                    null,          // siteLoginUrl
+                    userAttributes // attributeMap
+                );
+                
+            } else {
+                logger.error('User info endpoint returned error: ' + res.getStatusCode());
+                throw new Auth.AuthProviderPluginException('Failed to retrieve user info: HTTP ' + res.getStatusCode());
+            }
+            
+        } catch (System.CalloutException e) {
+            RFLIB_Logger logger = RFLIB_LoggerUtil.getLogger('Mall_Ping_AuthProviderCustomPlugin');
+            logger.error('Callout exception in getUserInfo: ' + e.getMessage());
+            MallExceptionUtil.logAuthException('USERINFO_CALLOUT_ERROR', e.getMessage());
+            throw new Auth.AuthProviderPluginException('Failed to retrieve user info: ' + e.getMessage());
+            
+        } catch (Exception e) {
+            RFLIB_Logger logger = RFLIB_LoggerUtil.getLogger('Mall_Ping_AuthProviderCustomPlugin');
+            logger.error('Unexpected exception in getUserInfo: ' + e.getMessage());
+            logger.error('Stack trace: ' + e.getStackTraceString());
+            MallExceptionUtil.logAuthException(e.getTypeName(), e.getMessage());
+            throw new Auth.AuthProviderPluginException('Failed to retrieve user info: ' + e.getMessage());
+        }
     }
 }
