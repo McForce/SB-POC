@@ -174,7 +174,7 @@ public with sharing class CreditAssessmentService {
      */
     private static void createRflibLog(String context, String logLevel, String logMessage, String requestId, Id ownerId) {
         try {
-            rflib_Logs__c log = new rflib_Logs__c();
+            rflib_Log__c log = new rflib_Log__c();
             log.Platform_Context__c = context;
             log.Platform_Log_Level__c = logLevel;
             log.Platform_Log_Messages__c = logMessage;
