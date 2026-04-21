@@ -1,0 +1,83 @@
+<template>
+    <lightning-card title="Credit Assessment" icon-name="standard:account">
+        <div class="slds-p-around_medium">
+            
+            <template lwc:if={showInitial}>
+                <p class="slds-m-bottom_medium">
+                    Click the button below to run an automated credit assessment for this customer.
+                    This will aggregate data from the Account, Contacts, and Opportunities to calculate
+                    a credit recommendation.
+                </p>
+                <lightning-button
+                    variant="brand"
+                    label="Run Credit Assessment"
+                    title="Run Credit Assessment"
+                    icon-name="utility:check"
+                    onclick={handleRunAssessment}
+                    disabled={isLoading}>
+                </lightning-button>
+            </template>
+            
+            <template lwc:if={isLoading}>
+                <div class="slds-align_absolute-center slds-m-vertical_large">
+                    <lightning-spinner alternative-text="Running assessment..." size="medium">
+                    </lightning-spinner>
+                </div>
+                <p class="slds-text-align_center">Running credit assessment...</p>
+            </template>
+            
+            <template lwc:if={showError}>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">Error</span>
+                    <lightning-icon icon-name="utility:error" alternative-text="Error" size="small" class="slds-m-right_x-small"></lightning-icon>
+                    <h2>Credit assessment failed. Please contact IT support.</h2>
+                </div>
+                <div class="slds-m-top_medium">
+                    <lightning-button
+                        variant="neutral"
+                        label="Try Again"
+                        onclick={handleRunAssessment}>
+                    </lightning-button>
+                </div>
+            </template>
+            
+            <template lwc:if={showResult}>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_success" role="alert">
+                    <span class="slds-assistive-text">Success</span>
+                    <lightning-icon icon-name="utility:success" alternative-text="Success" size="small" class="slds-m-right_x-small"></lightning-icon>
+                    <h2>{result.message}</h2>
+                </div>
+                
+                <div class="slds-m-top_medium">
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                            <div class="slds-text-title slds-m-bottom_xx-small">Credit Score</div>
+                            <div class="slds-text-heading_large">{result.creditScore}</div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                            <div class="slds-text-title slds-m-bottom_xx-small">Status</div>
+                            <div class="slds-text-heading_small">{result.creditStatus}</div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-p-around_small">
+                            <div class="slds-text-title slds-m-bottom_xx-small">Primary Contact</div>
+                            <div class="slds-text-body_regular">{result.primaryContactName}</div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1 slds-p-around_small">
+                            <div class="slds-text-title slds-m-bottom_xx-small">Recommendation</div>
+                            <div class="slds-text-body_regular">{result.recommendation}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slds-m-top_medium">
+                    <lightning-button
+                        variant="neutral"
+                        label="Run Again"
+                        onclick={handleRunAssessment}>
+                    </lightning-button>
+                </div>
+            </template>
+            
+        </div>
+    </lightning-card>
+</template>
