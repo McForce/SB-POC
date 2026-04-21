@@ -74,16 +74,12 @@ public with sharing class CreditAssessmentService {
             
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Attempting to access primary contact details');
             
-            // FIX: Added null check for primaryContact to prevent NullPointerException when no primary contact exists
-            String kycStatus = null;
-            if (primaryContact != null) {
-                kycStatus = primaryContact.KYC_Status__c;
-                result.primaryContactName = primaryContact.Name;
-                logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Primary contact KYC status: ' + kycStatus);
-            } else {
-                logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] WARN - No primary contact found for this account');
-                result.primaryContactName = 'No Primary Contact';
-            }
+            // BUG: No null check for primaryContact before accessing KYC_Status__c
+            // This will throw a NullPointerException when no primary contact exists
+            String kycStatus = primaryContact.KYC_Status__c;
+            result.primaryContactName = primaryContact.Name;
+            
+            logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Primary contact KYC status: ' + kycStatus);
             
             // Fetch related Opportunities
             List<Opportunity> opportunities = [
@@ -145,10 +141,9 @@ public with sharing class CreditAssessmentService {
             return result;
             
         } catch (Exception e) {
-            // Build error log message with full exception details
-            logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] ERROR - Exception occurred during credit assessment');
+            // Build error log message with minimal exception details (intentionally vague for demo purposes)
+            logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] ERROR - Unhandled exception encountered');
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] ERROR - Exception Type: ' + e.getTypeName());
-            logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] ERROR - Exception Message: ' + e.getMessage());
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] ERROR - Line Number: ' + e.getLineNumber());
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] ERROR - Stack Trace: ' + e.getStackTraceString());
             
@@ -157,7 +152,8 @@ public with sharing class CreditAssessmentService {
                 CLASS_NAME + '.' + methodName,
                 LOG_LEVEL_ERROR,
                 String.join(logMessages, '\n'),
-                requestId
+                requestId,
+                accountId
             );
             
             // Re-throw as AuraHandledException for the LWC to catch
@@ -174,14 +170,16 @@ public with sharing class CreditAssessmentService {
      * @param logLevel The severity level (ERROR, WARN, INFO, DEBUG)
      * @param logMessage The full log trail leading up to the error
      * @param requestId Unique identifier for this transaction
+     * @param ownerId The Account ID that was being processed when the error occurred
      */
-    private static void createRflibLog(String context, String logLevel, String logMessage, String requestId) {
+    private static void createRflibLog(String context, String logLevel, String logMessage, String requestId, Id ownerId) {
         try {
-            rflib_Log__c log = new rflib_Log__c();
+            rflib_Logs__c log = new rflib_Logs__c();
             log.Platform_Context__c = context;
             log.Platform_Log_Level__c = logLevel;
             log.Platform_Log_Messages__c = logMessage;
             log.Platform_Request_Id__c = requestId;
+            log.Owner_Id__c = ownerId;
             
             insert log;
             
