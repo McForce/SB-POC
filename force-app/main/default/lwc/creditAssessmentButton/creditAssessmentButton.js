@@ -4,26 +4,43 @@ import runAssessment from '@salesforce/apex/CreditAssessmentService.runAssessmen
 
 export default class CreditAssessmentButton extends LightningElement {
     @api recordId;
-    
+
     isLoading = false;
     showError = false;
     showResult = false;
     showInitial = true;
     result = {};
     errorMessage = '';
-    
+
     handleRunAssessment() {
         this.isLoading = true;
         this.showError = false;
         this.showResult = false;
         this.showInitial = false;
-        
+
         runAssessment({ accountId: this.recordId })
             .then(result => {
+                this.isLoading = false;
+
+                // isError=true means the Apex caught an error and returned an error
+                // result instead of throwing (to allow the RFLIB log insert to commit).
+                if (result.isError) {
+                    this.errorMessage = result.message;
+                    this.showError = true;
+
+                    this.dispatchEvent(
+                        new ShowToastEvent({
+                            title: 'Error',
+                            message: 'Credit assessment failed. Please contact IT support.',
+                            variant: 'error'
+                        })
+                    );
+                    return;
+                }
+
                 this.result = result;
                 this.showResult = true;
-                this.isLoading = false;
-                
+
                 this.dispatchEvent(
                     new ShowToastEvent({
                         title: 'Success',
@@ -37,7 +54,7 @@ export default class CreditAssessmentButton extends LightningElement {
                 this.errorMessage = error.body ? error.body.message : error.message;
                 this.showError = true;
                 this.isLoading = false;
-                
+
                 this.dispatchEvent(
                     new ShowToastEvent({
                         title: 'Error',
