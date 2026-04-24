@@ -75,8 +75,12 @@ public with sharing class CreditAssessmentService {
 
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Attempting to access primary contact details');
 
-            // BUG: No null check for primaryContact before accessing KYC_Status__c
-            // This will throw a NullPointerException when no primary contact exists
+            // FIX: Added null check for primaryContact before accessing properties to prevent NullPointerException
+            // If no primary contact exists, throw a descriptive error to alert users of missing data
+            if (primaryContact == null) {
+                throw new AuraHandledException('No primary contact designated for this Account. Please assign a primary contact before running credit assessment.');
+            }
+
             String kycStatus = primaryContact.KYC_Status__c;
             result.primaryContactName = primaryContact.Name;
 
