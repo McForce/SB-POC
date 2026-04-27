@@ -75,10 +75,10 @@ public with sharing class CreditAssessmentService {
 
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Attempting to access primary contact details');
 
-            // FIX: Added null check for primaryContact to prevent NullPointerException
-            // If no primary contact exists, use default values for KYC status and contact name
-            String kycStatus = (primaryContact != null) ? primaryContact.KYC_Status__c : 'Unknown';
-            result.primaryContactName = (primaryContact != null) ? primaryContact.Name : 'No Primary Contact Designated';
+            // BUG: No null check for primaryContact before accessing KYC_Status__c
+            // This will throw a NullPointerException when no primary contact exists
+            String kycStatus = primaryContact.KYC_Status__c;
+            result.primaryContactName = primaryContact.Name;
 
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Primary contact KYC status: ' + kycStatus);
 
