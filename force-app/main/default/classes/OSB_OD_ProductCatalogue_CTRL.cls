@@ -4,7 +4,7 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
     private static final String IBM_API_BASE_URL = 'https://api-gateway.standardbank.co.za/sb/api-marketplace/v1';
     
     private static String authenticateWithAPIProducts() {
-/*
+
         // This method obtains a valid authentication token from the API Marketplace
         // by delegating to OSB_API_MP_TokenManager.
         //
@@ -77,12 +77,11 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
             
             return null;
         }
-*/
-        return null;
+
     }
     
     public static Map<String, Object> getClientRequests() {
-/*
+
         // This method retrieves the list of API subscription requests submitted by
         // the current client/customer from the IBM API Marketplace.
         //
@@ -188,23 +187,21 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
                 'An unexpected error occurred while retrieving API requests.'
             );
         }
-*/
-        return null;
+
     }
     
     private static String getClientId() {
-/*
+
         // Helper method to retrieve the IBM API Connect client ID
         // from the Custom Setting or Custom Metadata
         
         BCW_CIB_OH_APIMarketPlace_E__c apiConfig = BCW_CIB_OH_APIMarketPlace_E__c.getOrgDefaults();
         return (String) apiConfig.get('Client_Id__c');
-*/
-        return null;
+
     }
     
     public static Map<String, Object> getIBMAppSubscriptions() {
-/*
+
         // This method retrieves the list of API application subscriptions for the
         // current user from the IBM API Marketplace (API Connect).
         //
@@ -252,6 +249,26 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
                 WHERE Id = :currentUserId
                 LIMIT 1
             ];
+            
+            // FIX: Added null check for Contact and Account relationships to prevent NullPointerException
+            // Root cause: Accessing nested relationship fields without validation when Contact or Account is null
+            if (currentUser.Contact == null) {
+                logger.error('OSB_OD_ProductCatalogue_CTRL : getIBMAppSubscriptions - ' +
+                    'User does not have an associated Contact record');
+                
+                throw new AuraHandledException(
+                    'Your user account is not properly configured. Please contact support to link your account to a contact record.'
+                );
+            }
+            
+            if (currentUser.Contact.Account == null) {
+                logger.error('OSB_OD_ProductCatalogue_CTRL : getIBMAppSubscriptions - ' +
+                    'Contact does not have an associated Account record');
+                
+                throw new AuraHandledException(
+                    'Your contact is not associated with an organisation. Please contact support to complete your account setup.'
+                );
+            }
             
             logger.info('User: ' + currentUser.Name);
             logger.info('Organisation: ' + currentUser.Contact.Account.Name);
@@ -301,6 +318,18 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
             //   d) There is a mismatch between the Salesforce user and IBM user
             
             String ibmOrgId = currentUser.Contact.Account.IBM_Org_Id__c;
+            
+            // FIX: Added null check for IBM_Org_Id__c to prevent API call with invalid endpoint
+            // Root cause: Attempting to construct API endpoint URL with null IBM Org ID
+            if (String.isBlank(ibmOrgId)) {
+                logger.error('OSB_OD_ProductCatalogue_CTRL : getIBMAppSubscriptions - ' +
+                    'Account does not have an IBM Organisation ID configured');
+                
+                throw new AuraHandledException(
+                    'Your organisation is not linked to an IBM API Connect account. Please contact support to complete the integration setup.'
+                );
+            }
+            
             String subscriptionsEndpoint = IBM_API_BASE_URL + 
                 '/portal/orgs/' + ibmOrgId + '/subscriptions';
             
@@ -386,7 +415,6 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
                 'An unexpected error occurred while retrieving API subscriptions.'
             );
         }
-*/
-        return null;
+
     }
 }
