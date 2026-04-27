@@ -75,16 +75,12 @@ public with sharing class CreditAssessmentService {
 
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Attempting to access primary contact details');
 
-            String kycStatus;
-            if (primaryContact != null) {
-                kycStatus = primaryContact.KYC_Status__c;
-                result.primaryContactName = primaryContact.Name;
-                logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Primary contact KYC status: ' + kycStatus);
-            } else {
-                kycStatus = null;
-                result.primaryContactName = 'No Primary Contact';
-                logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - No primary contact found, KYC status set to null');
-            }
+            // BUG: No null check for primaryContact before accessing KYC_Status__c
+            // This will throw a NullPointerException when no primary contact exists
+            String kycStatus = primaryContact.KYC_Status__c;
+            result.primaryContactName = primaryContact.Name;
+
+            logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Primary contact KYC status: ' + kycStatus);
 
             // Fetch related Opportunities
             List<Opportunity> opportunities = [
@@ -217,4 +213,3 @@ public with sharing class CreditAssessmentService {
         return 'TXN-' + timestamp + '-' + randomPart;
     }
 }
-
