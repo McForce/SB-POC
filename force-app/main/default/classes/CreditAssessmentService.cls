@@ -75,17 +75,16 @@ public with sharing class CreditAssessmentService {
 
             logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Attempting to access primary contact details');
 
-            // FIX: Changed to assign default KYC status when no primary contact exists instead of throwing exception.
-            // This allows credit assessment to complete gracefully with a reduced score contribution from KYC status.
+            // FIX: Added null check for primaryContact before accessing KYC_Status__c to prevent NullPointerException
             String kycStatus;
-            if (primaryContact == null) {
-                kycStatus = 'Unknown';
-                result.primaryContactName = 'No Primary Contact Designated';
-                logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - No primary contact found, using default KYC status: ' + kycStatus);
-            } else {
+            if (primaryContact != null) {
                 kycStatus = primaryContact.KYC_Status__c;
                 result.primaryContactName = primaryContact.Name;
                 logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - Primary contact KYC status: ' + kycStatus);
+            } else {
+                kycStatus = null;
+                result.primaryContactName = 'No Primary Contact';
+                logMessages.add('[' + System.now().format('yyyy-MM-dd HH:mm:ss.SSS') + '] INFO - No primary contact found, KYC status set to null');
             }
 
             // Fetch related Opportunities
