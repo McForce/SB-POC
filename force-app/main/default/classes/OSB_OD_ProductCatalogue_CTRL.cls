@@ -240,9 +240,9 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
             // Get the current user context
             String currentUserId = UserInfo.getUserId();
             
-            // Retrieve the user's contact and organisation details
-            // This is needed to map the Salesforce user to an IBM API Connect organisation
-            User currentUser = [
+            // FIX: Added null-safe navigation when querying related Contact and Account
+            // to prevent NullPointerException when accessing nested relationship fields (line 80 equivalent)
+            List<User> users = [
                 SELECT Id, Name, Email, ContactId, Contact.AccountId,
                        Contact.Account.Name, Contact.Account.IBM_Org_Id__c
                 FROM User
@@ -250,8 +250,20 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
                 LIMIT 1
             ];
             
-            // FIX: Added null check for Contact and Account relationships to prevent NullPointerException
-            // Root cause: Accessing nested relationship fields without validation when Contact or Account is null
+            // Validate user was found
+            if (users.isEmpty()) {
+                logger.error('OSB_OD_ProductCatalogue_CTRL : getIBMAppSubscriptions - ' +
+                    'User not found: ' + currentUserId);
+                
+                throw new AuraHandledException(
+                    'User account not found. Please contact support.'
+                );
+            }
+            
+            User currentUser = users[0];
+            
+            // FIX: Null check for Contact relationship to prevent NullPointerException
+            // Root cause: Accessing nested relationship fields without validation when Contact is null
             if (currentUser.Contact == null) {
                 logger.error('OSB_OD_ProductCatalogue_CTRL : getIBMAppSubscriptions - ' +
                     'User does not have an associated Contact record');
@@ -261,6 +273,8 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
                 );
             }
             
+            // FIX: Null check for Account relationship to prevent NullPointerException
+            // Root cause: Accessing nested Account fields when Contact.Account is null
             if (currentUser.Contact.Account == null) {
                 logger.error('OSB_OD_ProductCatalogue_CTRL : getIBMAppSubscriptions - ' +
                     'Contact does not have an associated Account record');
@@ -319,7 +333,7 @@ public with sharing class OSB_OD_ProductCatalogue_CTRL {
             
             String ibmOrgId = currentUser.Contact.Account.IBM_Org_Id__c;
             
-            // FIX: Added null check for IBM_Org_Id__c to prevent API call with invalid endpoint
+            // FIX: Null check for IBM_Org_Id__c to prevent API call with invalid endpoint
             // Root cause: Attempting to construct API endpoint URL with null IBM Org ID
             if (String.isBlank(ibmOrgId)) {
                 logger.error('OSB_OD_ProductCatalogue_CTRL : getIBMAppSubscriptions - ' +
